@@ -5,3 +5,9 @@
 *.scm~
 *.scm#*
 .#*.scm
+*~
+\#*
+.\#*
+.DS_Store
+compiled/
+/doc/
