@@ -5,7 +5,14 @@
                      (list (cons '+ +)
                            (cons '- -)
                            (cons '* *)
-                           (cons '/ /))))
+                           (cons '/ /)
+                           (cons '< <)
+                           (cons '> >)
+                           (cons '<= <=)
+                           (cons '>= >=)
+                           (cons '= =)
+                           (cons 'not not)
+                           (cons 'quit exit))))
 
 (define (env-get env sym)
   (hash-ref env sym))
@@ -31,11 +38,11 @@
     ((list? expr) (st-eval-list expr env))
     (else (error "Not a valid expression"))))
 
-
 (define (st-eval-list expr env)
   (cond
     ((empty? expr) '())
     ((define-expr? expr) (st-eval-define expr env))
+    ((if-expr? expr) (st-eval-if expr env))
     (else (st-apply (st-eval (first expr) #:env env)
                     (map (λ (e) (st-eval e #:env env)) (rest expr))
                     #:env env))))
@@ -52,7 +59,7 @@
     (cond
       ((not (symbol? var)) (error "Cannot define non symbols"))
       ((st-lambda-expr? val) (st-add-fn var val env))
-      (else (begin (env-set! env var (st-eval val)) env)))))
+      (else (begin (env-set! env var (st-eval val)) var)))))
 
 (define (st-lambda-expr? expr)
   (tagged-with? expr 'lambda))
@@ -61,7 +68,18 @@
   (env-set! env name-sym (list 'function
                                (list 'args (second expr))
                                (list 'body (cddr expr))))
-  env)
+  name-sym)
+
+(define (if-expr? expr)
+  (tagged-with? expr 'if))
+
+(define (st-eval-if expr env)
+  (let ([conditional (second expr)]
+        [true-part (third expr)]
+        [false-part (fourth expr)])
+    (if (st-eval conditional #:env env)
+        (st-eval true-part #:env env)
+        (st-eval false-part #:env env))))
 
 (define (st-function? expr)
   (tagged-with? expr 'function))
@@ -78,5 +96,10 @@
       (apply fn arg-list)
       (error "native-apply: do not know how to do that!")))
 
+(define (repl)
+  (let loop ()
+    (displayln (begin (display "? ")
+                      (st-eval (read))))
+    (loop)))
 
-
+(repl)
